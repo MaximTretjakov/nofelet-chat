@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    image: ghcr.io/maximtretjakov/nofelet-chat:latest
+    container_name: chat_server
+    restart: always
+    ports:
+        - "8443:8443" # Внешний порт : Порт внутри контейнера
+    env_file:
+        - .env
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - internal_net
+
+networks:
+  internal_net:
+    driver: bridge
