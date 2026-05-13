@@ -7,13 +7,13 @@ import (
 )
 
 type Controller struct {
-	Logger *slog.Logger
-	Config *config.Config
+	log *slog.Logger
+	cfg *config.Config
 }
 
 func NewController(logger *slog.Logger, cfg *config.Config) *Controller {
 	return &Controller{
-		Logger: logger,
-		Config: cfg,
+		log: logger,
+		cfg: cfg,
 	}
 }

@@ -9,5 +9,5 @@ func Register(deps *dependency.Container) {
 	c := sc.NewController(deps.Logger, deps.Cfg)
 
 	r := deps.Chat.Routes
-	r.GET("/connect/:uuid", c.GetConnection)
+	r.GET("/chat", c.GetChat)
 }

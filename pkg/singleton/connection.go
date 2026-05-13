@@ -10,66 +10,55 @@ import (
 
 var (
 	once     sync.Once
-	instance *RoomManager
+	instance *Chat
 )
 
-type Room struct {
-	Initiator    *Participant  // Инициатор звонка
-	Callee       *Participant  // Участник звонка
-	PendingOffer *view.SDPData // Данные SDP сессии
-}
-
-type Participant struct {
+type ChatRoom struct {
 	Conn     *websocket.Conn // Объект коннекшена участника звонка
 	Nickname string          // Ник участника звонка
-	Role     string          // Роль участника звонка
 }
 
-// RoomManager - хранит и управляет комнатами
-type RoomManager struct {
+// Chat - управляет чат комнатами
+type Chat struct {
 	mu    sync.RWMutex
-	Rooms map[string]*Room
+	Rooms map[string]*ChatRoom
 }
 
-// NewRoom - создает комнату
-func NewRoom() *RoomManager {
+// NewChatRoom - создает чат комнату
+func NewChatRoom() *Chat {
 	once.Do(func() {
-		instance = &RoomManager{
-			Rooms: make(map[string]*Room),
+		instance = &Chat{
+			Rooms: make(map[string]*ChatRoom),
 		}
 	})
 	return instance
 }
 
 // Init - инициализирует комнату с конкретным uuid и инициализирует ее дефолтно
-func (rm *RoomManager) Init(uuid string) {
+func (rm *Chat) Init(uuid string) {
 	rm.mu.Lock()
 	if _, ok := rm.Rooms[uuid]; !ok {
-		rm.Rooms[uuid] = &Room{
-			Initiator:    &Participant{},
-			Callee:       &Participant{},
-			PendingOffer: &view.SDPData{},
-		}
+		rm.Rooms[uuid] = &ChatRoom{}
 	}
 	rm.mu.Unlock()
 }
 
 // DeleteClient - удаляем коннекшен клиента
-func (rm *RoomManager) DeleteClient(uuid string) {
+func (rm *Chat) DeleteClient(uuid string) {
 	rm.mu.Lock()
 	delete(rm.Rooms, uuid)
 	rm.mu.Unlock()
 }
 
 // Connections - возвращает количество клиентов
-func (rm *RoomManager) Connections() int {
+func (rm *Chat) Connections() int {
 	rm.mu.RLock()
 	defer rm.mu.RUnlock()
 	return len(rm.Rooms)
 }
 
 // Broadcast - рассылает сообщения все клиентам доя установления SDP сессии
-func (rm *RoomManager) Broadcast(data view.SDPData, sender *websocket.Conn) error {
+func (rm *Chat) Broadcast(data view.Data, sender *websocket.Conn) error {
 	rm.mu.RLock()
 	defer rm.mu.RUnlock()
 

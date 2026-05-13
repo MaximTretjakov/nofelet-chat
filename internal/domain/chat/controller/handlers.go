@@ -13,7 +13,7 @@ const (
 )
 
 // Join - Обрабатывает событие join
-func Join(data view.SDPData, conn *websocket.Conn, r *singleton.Room, rs *singleton.RoomManager) error {
+func Join(data view.Data, conn *websocket.Conn, r *singleton.ChatRoom, rs *singleton.Chat) error {
 	// Кто пришел? Инициатор или собеседник?
 	if data.Participant.Role == caller {
 		r.Initiator.Conn = conn

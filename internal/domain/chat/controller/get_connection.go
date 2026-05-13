@@ -10,34 +10,39 @@ import (
 	"nofelet/pkg/singleton"
 )
 
-// GetConnection - /connect/:uuid установка sdp сессии
-func (c *Controller) GetConnection(ctx *gin.Context) {
-	upgradedConn, sErr := Upgrader(ctx)
+// GetChat - /chat создает чат
+func (c *Controller) GetChat(ctx *gin.Context) {
+	uConn, sErr := Upgrader(ctx)
 	if sErr != nil {
-		c.Logger.Error("socket creation", slog.Any("err", sErr))
+		c.log.Error("socket creation", slog.Any("err", sErr))
 	}
 
-	managedConn := decorator.NewConn(upgradedConn, c.Logger, c.Config)
+	chat := singleton.NewChatRoom()
 
-	go handler(managedConn, uuid, room, c.Logger)
+	dConn := decorator.NewConnection(uConn, c.log, c.cfg)
+	defer func() {
+		if err := dConn.Close(); err != nil {
+			c.log.Error("close connection", slog.Any("err", err))
+		}
+	}()
+
+	go handler(dConn, chat, c.log)
 }
 
 // handler - обрабатывает коннекты участников
-func handler(mc *decorator.ConnectionManager, uuid string, room *singleton.RoomManager, logger *slog.Logger) {
+func handler(mc *decorator.ConnectionManager, chat *singleton.Chat, logger *slog.Logger) {
 	defer func() {
-		room.DeleteClient(uuid)
+		chat.DeleteClient(uuid)
 		_ = mc.Close()
 	}()
 
-	var data view.SDPData
+	var data view.Data
 
 	for {
 		if readErr := mc.ReadJSON(&data); readErr != nil {
 			logger.Error("socket read", slog.Any("err", readErr))
 			break
 		}
-
-		r := room.Rooms[uuid]
 
 		switch data.Type {
 		case "join":
