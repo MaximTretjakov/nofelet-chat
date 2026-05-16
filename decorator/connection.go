@@ -16,8 +16,8 @@ type ConnectionManager struct {
 	remoteIP string
 }
 
-// NewConn - создает логирующий декоратор
-func NewConn(conn *websocket.Conn, logger *slog.Logger, cfg *config.Config) *ConnectionManager {
+// New - создает логирующий декоратор
+func New(conn *websocket.Conn, logger *slog.Logger, cfg *config.Config) *ConnectionManager {
 	return &ConnectionManager{
 		Conn:     conn,
 		cfg:      cfg,
