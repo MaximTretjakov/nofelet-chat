@@ -23,3 +23,8 @@ type TypingPayload struct {
 	ChatID   string `json:"chat_id"`   // ID комнаты чата
 	IsTyping bool   `json:"is_typing"` // Флаг того что пользователь что-то набирает в данный момент
 }
+
+type JoinMessagePayload struct {
+	ChatID string `json:"chat_id"` // ID комнаты чата
+	Nick   string `json:"nick"`    // Ник пользователя
+}

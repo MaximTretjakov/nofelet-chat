@@ -15,14 +15,14 @@ const (
 	textEvent = "text"
 )
 
-func (uc *UseCase) Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *singleton.Chat) error {
-	go handler(cm, chat, uc.log)
+func (uc *UseCase) Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *singleton.Chat, uuid string) error {
+	go handler(cm, chat, uc.log, uuid)
 
 	return nil
 }
 
 // handler - обрабатывает логику обмена сообщениями
-func handler(cm *decorator.ConnectionManager, chat *singleton.Chat, log *slog.Logger) {
+func handler(cm *decorator.ConnectionManager, chat *singleton.Chat, log *slog.Logger, uuid string) {
 	var e view.Event
 
 	for {
@@ -33,14 +33,14 @@ func handler(cm *decorator.ConnectionManager, chat *singleton.Chat, log *slog.Lo
 
 		switch e.Type {
 		case joinEvent:
-			var msg view.SendMessagePayload
+			var msg view.JoinMessagePayload
 			if err := json.Unmarshal(e.Payload, &msg); err != nil {
 				log.Error("failed to unmarshal message payload", "err", err)
 				continue // эту ошибку обработали, идем читать следующее сообщение
 			}
 
-			if jErr := join(); jErr != nil {
-				log.Error("handler", "err", jErr)
+			if jErr := join(cm, chat, uuid, msg.Nick); jErr != nil {
+				log.Error("join handler", "err", jErr)
 			}
 		case textEvent:
 			var typing view.TypingPayload

@@ -21,14 +21,14 @@ type ChatRoom struct {
 // Chat - управляет чат комнатами
 type Chat struct {
 	mu    sync.RWMutex
-	Rooms map[string]*ChatRoom
+	Rooms map[string][]*ChatRoom
 }
 
 // NewChatRoom - создает чат комнату
 func NewChatRoom() *Chat {
 	once.Do(func() {
 		instance = &Chat{
-			Rooms: make(map[string]*ChatRoom),
+			Rooms: make(map[string][]*ChatRoom),
 		}
 	})
 	return instance
@@ -38,7 +38,7 @@ func NewChatRoom() *Chat {
 func (rm *Chat) Init(uuid string) {
 	rm.mu.Lock()
 	if _, ok := rm.Rooms[uuid]; !ok {
-		rm.Rooms[uuid] = &ChatRoom{}
+		rm.Rooms[uuid] = make([]*ChatRoom, 0)
 	}
 	rm.mu.Unlock()
 }
