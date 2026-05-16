@@ -7,13 +7,15 @@ import (
 )
 
 type Controller struct {
+	uc  UseCase
 	log *slog.Logger
 	cfg *config.Config
 }
 
-func NewController(logger *slog.Logger, cfg *config.Config) *Controller {
+func New(uc UseCase, log *slog.Logger, cfg *config.Config) *Controller {
 	return &Controller{
-		log: logger,
+		uc:  uc,
+		log: log,
 		cfg: cfg,
 	}
 }
