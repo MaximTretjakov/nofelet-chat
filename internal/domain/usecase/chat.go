@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"context"
 	"encoding/json"
 	"log/slog"
 
@@ -15,8 +14,8 @@ const (
 	textEvent = "text"
 )
 
-func (uc *UseCase) Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *singleton.Chat) error {
-	go handler(cm, chat, uc.log)
+func (uc *UseCase) Chat(cm *decorator.ConnectionManager, chat *singleton.Chat) error {
+	go handler(cm, chat, uc.log) // todo реализовать контроль за горутинами (в каких случаях оа завершается и как)
 
 	return nil
 }
@@ -33,23 +32,23 @@ func handler(cm *decorator.ConnectionManager, chat *singleton.Chat, log *slog.Lo
 
 		switch e.Type {
 		case joinEvent:
-			var msg view.SendMessagePayload
-			if err := json.Unmarshal(e.Payload, &msg); err != nil {
+			var j view.JoinMessagePayload
+			if err := json.Unmarshal(e.Payload, &j); err != nil {
 				log.Error("failed to unmarshal message payload", "err", err)
 				continue // эту ошибку обработали, идем читать следующее сообщение
 			}
 
-			if jErr := join(); jErr != nil {
-				log.Error("handler", "err", jErr)
+			if jErr := join(cm, chat, j); jErr != nil {
+				log.Error("join handler", "err", jErr)
 			}
 		case textEvent:
-			var typing view.TypingPayload
-			if err := json.Unmarshal(e.Payload, &typing); err != nil {
+			var m view.SendMessagePayload
+			if err := json.Unmarshal(e.Payload, &m); err != nil {
 				log.Error("failed to unmarshal typing payload", "err", err)
 				continue
 			}
 
-			if tErr := text(); tErr != nil {
+			if tErr := text(chat, m); tErr != nil {
 				log.Error("handler", "err", tErr)
 			}
 		}

@@ -8,8 +8,10 @@ type Event struct {
 }
 
 type SendMessagePayload struct {
-	ChatID  string `json:"chat_id"` // ID комнаты чата
-	Content string `json:"content"` // Текстовое сообщение
+	ChatID    string `json:"chat_id"`   // ID комнаты чата
+	Sender    string `json:"sender"`    // От кого
+	Recipient string `json:"recipient"` // Кому
+	Content   string `json:"content"`   // Текстовое сообщение
 }
 
 type FileMessagePayload struct {
@@ -22,4 +24,9 @@ type FileMessagePayload struct {
 type TypingPayload struct {
 	ChatID   string `json:"chat_id"`   // ID комнаты чата
 	IsTyping bool   `json:"is_typing"` // Флаг того что пользователь что-то набирает в данный момент
+}
+
+type JoinMessagePayload struct {
+	ChatID string `json:"chat_id"` // ID комнаты чата
+	Nick   string `json:"nick"`    // Ник пользователя
 }
