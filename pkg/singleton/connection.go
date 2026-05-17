@@ -14,8 +14,8 @@ var (
 )
 
 type ChatRoom struct {
-	Conn     *websocket.Conn // Объект коннекшена участника звонка
-	Nickname string          // Ник участника звонка
+	Conn *websocket.Conn // Объект коннекшена участника звонка
+	Nick string          // Ник участника звонка
 }
 
 // Chat - управляет чат комнатами
@@ -57,27 +57,16 @@ func (rm *Chat) Connections() int {
 	return len(rm.Rooms)
 }
 
-// Broadcast - рассылает сообщения все клиентам доя установления SDP сессии
-func (rm *Chat) Broadcast(data view.Data, sender *websocket.Conn) error {
-	rm.mu.RLock()
-	defer rm.mu.RUnlock()
+// GetUserByName - возвращает пользователя которому адресовано сообщение если он есть в комнате
+func (rm *Chat) GetUserByName(m view.SendMessagePayload) *ChatRoom {
+	room, ok := rm.Rooms[m.ChatID]
+	if !ok {
+		return nil
+	}
 
-	for roomID, room := range rm.Rooms {
-		initiator := room.Initiator.Conn
-		callee := room.Callee.Conn
-
-		if sender == initiator {
-			if err := callee.WriteJSON(data); err != nil {
-				_ = initiator.Close()
-				delete(rm.Rooms, roomID)
-				return err
-			}
-		}
-
-		if err := initiator.WriteJSON(data); err != nil {
-			_ = callee.Close()
-			delete(rm.Rooms, roomID)
-			return err
+	for _, chatRoom := range room {
+		if chatRoom.Nick == m.Recipient {
+			return chatRoom
 		}
 	}
 
