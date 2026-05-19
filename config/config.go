@@ -9,9 +9,8 @@ import (
 )
 
 type Config struct {
-	WS     WSConfig `env:",prefix=WS_"`     // Инфа сервера
-	CoTURN CoTURN   `env:",prefix=COTURN_"` // Котерн инфа
-	Debug  bool     `env:"DEBUG"`           // Дебаг режимы
+	WS    WSConfig `env:",prefix=WS_"` // Инфа сервера
+	Debug bool     `env:"DEBUG"`       // Дебаг режимы
 }
 
 type WSConfig struct {
@@ -22,11 +21,6 @@ type WSConfig struct {
 	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT,default=30s"`       // Таймаут на запись
 	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT,default=30s"` // Таймаут на чтение хедеров
 	ShutdownTimeout   time.Duration `env:"SHUTDOWN_TIMEOUT,default=3s"`     // Таймаут на завершение
-}
-
-type CoTURN struct {
-	SharedSecret string `env:"SHARED_SECRET,required"`  // Секрет
-	TurnServerIP string `env:"TURN_SERVER_IP,required"` // IP адресе сервера
 }
 
 func init() {
