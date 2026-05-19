@@ -1,6 +1,8 @@
 package view
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type Event struct {
 	Type    string          `json:"type"`    // Тип события: "message", "typing", "file"

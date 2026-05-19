@@ -1,56 +1,35 @@
 package usecase
 
 import (
-	"encoding/json"
-	"log/slog"
+	"context"
 
 	"nofelet/decorator"
 	"nofelet/internal/domain/chat/controller/view"
 	"nofelet/pkg/singleton"
 )
 
-const (
-	joinEvent = "join"
-	textEvent = "text"
-)
+func (uc *UseCase) Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *singleton.Chat) error {
+	ctx, cancel := context.WithCancel(ctx)
 
-func (uc *UseCase) Chat(cm *decorator.ConnectionManager, chat *singleton.Chat) error {
-	go handler(cm, chat, uc.log) // todo реализовать контроль за горутинами (в каких случаях оа завершается и как)
+	defer func() {
+		cancel()
+		if err := cm.Close(); err != nil {
+			uc.log.Error("defer close connection chat", "err", err)
+		}
+	}()
 
-	return nil
-}
-
-// handler - обрабатывает логику обмена сообщениями
-func handler(cm *decorator.ConnectionManager, chat *singleton.Chat, log *slog.Logger) {
 	var e view.Event
+	dataCh := make(chan view.Event, 100)
+
+	go writePump(ctx, dataCh, cm, chat, uc.log)
+	go readPump(ctx, dataCh, cm, chat, uc.log)
 
 	for {
 		if readErr := cm.ReadJSON(&e); readErr != nil {
-			log.Error("socket read json", "err", readErr)
-			break
+			uc.log.Error("socket read json", "err", readErr)
+			return readErr
 		}
 
-		switch e.Type {
-		case joinEvent:
-			var j view.JoinMessagePayload
-			if err := json.Unmarshal(e.Payload, &j); err != nil {
-				log.Error("failed to unmarshal message payload", "err", err)
-				continue // эту ошибку обработали, идем читать следующее сообщение
-			}
-
-			if jErr := join(cm, chat, j); jErr != nil {
-				log.Error("join handler", "err", jErr)
-			}
-		case textEvent:
-			var m view.SendMessagePayload
-			if err := json.Unmarshal(e.Payload, &m); err != nil {
-				log.Error("failed to unmarshal typing payload", "err", err)
-				continue
-			}
-
-			if tErr := text(chat, m); tErr != nil {
-				log.Error("handler", "err", tErr)
-			}
-		}
+		dataCh <- e
 	}
 }

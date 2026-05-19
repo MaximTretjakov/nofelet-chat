@@ -35,7 +35,7 @@ func (c *Controller) GetChat(ctx *gin.Context) {
 		}
 	}()
 
-	if cErr := c.uc.Chat(dConn, chat); cErr != nil {
+	if cErr := c.uc.Chat(ctx, dConn, chat); cErr != nil {
 		c.log.Error("use case chat", "err", cErr)
 	}
 }
