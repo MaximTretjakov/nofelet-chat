@@ -14,9 +14,9 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 # Копируем бинарь с новым именем
-COPY --from=builder /app/nofelet .
+COPY --from=builder /app/nofelet-chat .
 
-EXPOSE 8443
+EXPOSE 8444
 
 # Запускаем именно nofelet
 CMD ["./nofelet-chat"]
