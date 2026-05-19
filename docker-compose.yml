@@ -6,7 +6,7 @@ services:
     container_name: chat_server
     restart: always
     ports:
-        - "8443:8443" # Внешний порт : Порт внутри контейнера
+        - "8444:8444" # Внешний порт : Порт внутри контейнера
     env_file:
         - .env
     volumes:
