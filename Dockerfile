@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 
 # Собираем из папки cmd/chat
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o nofelet-chat ./cmd/
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o nofelet-chat ./cmd/chat
 
 # --- Этап запуска ---
 FROM alpine:latest
