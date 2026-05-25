@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"time"
 
@@ -11,7 +10,7 @@ import (
 
 	"nofelet/decorator"
 	"nofelet/internal/domain/chat/controller/view"
-	"nofelet/pkg/singleton"
+	"nofelet/internal/hub"
 )
 
 const (
@@ -21,48 +20,12 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 )
 
-var (
-	errChatRoomNotFound        = errors.New("chat room not found")
-	errChatOrRecipientNotFound = errors.New("chat room or recipient not found")
-)
-
-// join - Обрабатывает событие join присоединение к чату
-func join(cm *decorator.ConnectionManager, chat *singleton.Hub, j view.JoinMessagePayload) error {
-	// находим комнату с uuid
-	room, ok := chat.Rooms[j.ChatID]
-	if !ok {
-		return errChatRoomNotFound
-	}
-
-	// если комната есть регаемся в ней
-	room = append(room, &singleton.ChatRoom{
-		Conn: cm.Conn,
-		Nick: j.Nick,
-	})
-
-	return nil
-}
-
-// text - Обрабатывает событие text (текстовый тип сообщения)
-func text(chat *singleton.Hub, m view.SendMessagePayload) error {
-	recipient := chat.GetRecipient(m)
-	if recipient == nil {
-		return errChatOrRecipientNotFound
-	}
-
-	if err := recipient.Conn.WriteJSON(m); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // readPump - Обрабатывает чтение из сокета
 func readPump(
 	ctx context.Context,
 	dataCh chan view.Event,
 	cm *decorator.ConnectionManager,
-	chat *singleton.Hub,
+	chat *hub.Hub,
 	log *slog.Logger,
 ) {
 	ticker := time.NewTicker(pingPeriod)
@@ -105,7 +68,7 @@ func writePump(
 	ctx context.Context,
 	dataCh chan view.Event,
 	cm *decorator.ConnectionManager,
-	chat *singleton.Hub,
+	chat *hub.Hub,
 	log *slog.Logger,
 ) {
 	ticker := time.NewTicker(pingPeriod)
@@ -143,7 +106,7 @@ func writePump(
 }
 
 // readDispatcher - Определяет тип события по чтению
-func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *singleton.Hub, log *slog.Logger) error {
+func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub, log *slog.Logger) error {
 	switch e.Type {
 	case joinEvent:
 		var j view.JoinMessagePayload
@@ -151,7 +114,7 @@ func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *singlet
 			log.Error("failed to unmarshal message payload", "err", err)
 		}
 
-		if jErr := join(cm, chat, j); jErr != nil {
+		if jErr := chat.Join(cm, j); jErr != nil {
 			log.Error("join handler", "err", jErr)
 		}
 	}
@@ -160,7 +123,7 @@ func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *singlet
 }
 
 // writeDispatcher - Определяет тип события по записи
-func writeDispatcher(e view.Event, chat *singleton.Hub, log *slog.Logger) error {
+func writeDispatcher(e view.Event, chat *hub.Hub, log *slog.Logger) error {
 	switch e.Type {
 	case textEvent:
 		var m view.SendMessagePayload
@@ -168,7 +131,7 @@ func writeDispatcher(e view.Event, chat *singleton.Hub, log *slog.Logger) error 
 			log.Error("failed to unmarshal typing payload", "err", err)
 		}
 
-		if tErr := text(chat, m); tErr != nil {
+		if tErr := chat.Text(m); tErr != nil {
 			log.Error("handler", "err", tErr)
 		}
 	}

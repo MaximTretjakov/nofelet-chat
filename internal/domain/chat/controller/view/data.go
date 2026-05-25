@@ -32,3 +32,7 @@ type JoinMessagePayload struct {
 	ChatID string `json:"chat_id"` // ID комнаты чата
 	Nick   string `json:"nick"`    // Ник пользователя
 }
+
+type LeaveMessagePayload struct {
+	JoinMessagePayload
+}

@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"nofelet/decorator"
-	"nofelet/pkg/singleton"
+	"nofelet/internal/hub"
 )
 
 var errChatRoomNotFound = errors.New("chat room not found")
@@ -25,7 +25,7 @@ func (c *Controller) GetChat(ctx *gin.Context) {
 		c.log.Error("socket creation", "err", sErr)
 	}
 
-	chat := singleton.NewChatRoom()
+	chat := hub.NewChatRoom()
 	chat.Init(uuid)
 
 	dConn := decorator.New(uConn, c.log, c.cfg)
