@@ -27,7 +27,7 @@ var (
 )
 
 // join - Обрабатывает событие join присоединение к чату
-func join(cm *decorator.ConnectionManager, chat *singleton.Chat, j view.JoinMessagePayload) error {
+func join(cm *decorator.ConnectionManager, chat *singleton.Hub, j view.JoinMessagePayload) error {
 	// находим комнату с uuid
 	room, ok := chat.Rooms[j.ChatID]
 	if !ok {
@@ -44,8 +44,8 @@ func join(cm *decorator.ConnectionManager, chat *singleton.Chat, j view.JoinMess
 }
 
 // text - Обрабатывает событие text (текстовый тип сообщения)
-func text(chat *singleton.Chat, m view.SendMessagePayload) error {
-	recipient := chat.GetUserByName(m)
+func text(chat *singleton.Hub, m view.SendMessagePayload) error {
+	recipient := chat.GetRecipient(m)
 	if recipient == nil {
 		return errChatOrRecipientNotFound
 	}
@@ -62,7 +62,7 @@ func readPump(
 	ctx context.Context,
 	dataCh chan view.Event,
 	cm *decorator.ConnectionManager,
-	chat *singleton.Chat,
+	chat *singleton.Hub,
 	log *slog.Logger,
 ) {
 	ticker := time.NewTicker(pingPeriod)
@@ -105,7 +105,7 @@ func writePump(
 	ctx context.Context,
 	dataCh chan view.Event,
 	cm *decorator.ConnectionManager,
-	chat *singleton.Chat,
+	chat *singleton.Hub,
 	log *slog.Logger,
 ) {
 	ticker := time.NewTicker(pingPeriod)
@@ -143,7 +143,7 @@ func writePump(
 }
 
 // readDispatcher - Определяет тип события по чтению
-func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *singleton.Chat, log *slog.Logger) error {
+func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *singleton.Hub, log *slog.Logger) error {
 	switch e.Type {
 	case joinEvent:
 		var j view.JoinMessagePayload
@@ -160,7 +160,7 @@ func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *singlet
 }
 
 // writeDispatcher - Определяет тип события по записи
-func writeDispatcher(e view.Event, chat *singleton.Chat, log *slog.Logger) error {
+func writeDispatcher(e view.Event, chat *singleton.Hub, log *slog.Logger) error {
 	switch e.Type {
 	case textEvent:
 		var m view.SendMessagePayload

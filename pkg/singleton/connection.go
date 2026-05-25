@@ -3,6 +3,7 @@ package singleton
 import (
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
 	"nofelet/internal/domain/chat/controller/view"
@@ -10,65 +11,84 @@ import (
 
 var (
 	once     sync.Once
-	instance *Chat
+	instance *Hub
 )
 
-type ChatRoom struct {
-	Conn *websocket.Conn // Объект коннекшена участника звонка
-	Nick string          // Ник участника звонка
+// Hub - управляет чат комнатами
+type Hub struct {
+	mu    sync.RWMutex
+	Rooms map[string]*Room // key = roomID
 }
 
-// Chat - управляет чат комнатами
-type Chat struct {
-	mu    sync.RWMutex
-	Rooms map[string][]*ChatRoom
+// Room - управляет конкретной комнатой чата
+type Room struct {
+	mu      sync.RWMutex
+	Clients map[string]*Client // key = userID, value = инфо о клиенте
+}
+
+// Client - информация о клиенте
+type Client struct {
+	ID     string
+	RoomID string
+	Nick   string      // Ник участника звонка
+	Send   chan []byte // Канал для writePump
+	Conn   *websocket.Conn
 }
 
 // NewChatRoom - создает чат комнату
-func NewChatRoom() *Chat {
+func NewChatRoom() *Hub {
 	once.Do(func() {
-		instance = &Chat{
-			Rooms: make(map[string][]*ChatRoom),
+		instance = &Hub{
+			Rooms: make(map[string]*Room),
 		}
 	})
 	return instance
 }
 
 // Init - инициализирует комнату с конкретным uuid и инициализирует ее дефолтно
-func (rm *Chat) Init(uuid string) {
-	rm.mu.Lock()
-	if _, ok := rm.Rooms[uuid]; !ok {
-		rm.Rooms[uuid] = make([]*ChatRoom, 0)
+func (h *Hub) Init(uuid string) {
+	h.mu.Lock()
+	if _, ok := h.Rooms[uuid]; !ok {
+		h.Rooms[uuid] = &Room{
+			Clients: make(map[string]*Client),
+		}
 	}
-	rm.mu.Unlock()
+	h.mu.Unlock()
 }
 
-// DeleteClient - удаляем коннекшен клиента
-func (rm *Chat) DeleteClient(uuid string) {
-	rm.mu.Lock()
-	delete(rm.Rooms, uuid)
-	rm.mu.Unlock()
-}
-
-// Connections - возвращает количество клиентов
-func (rm *Chat) Connections() int {
-	rm.mu.RLock()
-	defer rm.mu.RUnlock()
-	return len(rm.Rooms)
-}
-
-// GetUserByName - возвращает пользователя которому адресовано сообщение если он есть в комнате
-func (rm *Chat) GetUserByName(m view.SendMessagePayload) *ChatRoom {
-	room, ok := rm.Rooms[m.ChatID]
+// GetRecipient - возвращает пользователя которому адресовано сообщение если он есть в комнате
+func (h *Hub) GetRecipient(m view.SendMessagePayload) *Client {
+	room, ok := h.Rooms[m.ChatID]
 	if !ok {
 		return nil
 	}
 
-	for _, chatRoom := range room {
-		if chatRoom.Nick == m.Recipient {
-			return chatRoom
+	for _, client := range room.Clients {
+		if client.Nick == m.Recipient {
+			return client
 		}
 	}
 
 	return nil
+}
+
+// AddClient - добавляет клиента в комнату
+func (r *Room) AddClient(nick string, conn *websocket.Conn) string {
+	clientID := uuid.New().String()
+
+	r.mu.Lock()
+	r.Clients[clientID] = &Client{
+		Nick: nick,
+		Conn: conn,
+	}
+	r.mu.Unlock()
+
+	return clientID
+}
+
+// RemoveClient - удаляет клиента из комнаты
+func (r *Room) RemoveClient(clientID string) {
+	r.mu.Lock()
+	delete(r.Clients, clientID)
+	r.mu.Unlock()
 }
