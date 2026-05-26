@@ -10,14 +10,8 @@ import (
 
 	"nofelet/decorator"
 	"nofelet/internal/domain/chat/controller/view"
+	"nofelet/internal/domain/event"
 	"nofelet/internal/hub"
-)
-
-const (
-	joinEvent  = "join"
-	textEvent  = "text"
-	pongWait   = 60 * time.Second
-	pingPeriod = (pongWait * 9) / 10
 )
 
 // readPump - Обрабатывает чтение из сокета
@@ -28,7 +22,7 @@ func readPump(
 	chat *hub.Hub,
 	log *slog.Logger,
 ) {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(event.PingPeriod)
 	defer func() {
 		ticker.Stop()
 		cm.Close()
@@ -39,7 +33,7 @@ func readPump(
 	for {
 		select {
 		case msg := <-dataCh:
-			if err := readDispatcher(msg, cm, chat, log); err != nil {
+			if err := dispatcher(msg, cm, chat, log); err != nil {
 				return
 			}
 		case <-ticker.C:
@@ -71,7 +65,7 @@ func writePump(
 	chat *hub.Hub,
 	log *slog.Logger,
 ) {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(event.PingPeriod)
 	defer func() {
 		ticker.Stop()
 		cm.Close()
@@ -81,7 +75,7 @@ func writePump(
 		select {
 		case msg := <-dataCh:
 			// Пришло сообщение для отправки клиенту
-			if err := writeDispatcher(msg, chat, log); err != nil {
+			if err := dispatcher(msg, cm, chat, log); err != nil {
 				return
 			}
 		case <-ticker.C:
@@ -105,10 +99,10 @@ func writePump(
 	}
 }
 
-// readDispatcher - Определяет тип события по чтению
-func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub, log *slog.Logger) error {
+// dispatcher - Определяет тип события по чтению
+func dispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub, log *slog.Logger) error {
 	switch e.Type {
-	case joinEvent:
+	case event.JoinEvent:
 		var j view.JoinMessagePayload
 		if err := json.Unmarshal(e.Payload, &j); err != nil {
 			log.Error("failed to unmarshal message payload", "err", err)
@@ -117,15 +111,16 @@ func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub
 		if jErr := chat.Join(cm, j); jErr != nil {
 			log.Error("join handler", "err", jErr)
 		}
-	}
+	case event.LeaveEvent:
+		var l view.LeaveMessagePayload
+		if err := json.Unmarshal(e.Payload, &l); err != nil {
+			log.Error("failed to unmarshal message payload", "err", err)
+		}
 
-	return nil
-}
-
-// writeDispatcher - Определяет тип события по записи
-func writeDispatcher(e view.Event, chat *hub.Hub, log *slog.Logger) error {
-	switch e.Type {
-	case textEvent:
+		if lErr := chat.Leave(cm, l); lErr != nil {
+			log.Error("leave handler", "err", lErr)
+		}
+	case event.TextEvent:
 		var m view.SendMessagePayload
 		if err := json.Unmarshal(e.Payload, &m); err != nil {
 			log.Error("failed to unmarshal typing payload", "err", err)

@@ -2,12 +2,14 @@ package hub
 
 import (
 	"errors"
+	"maps"
 	"sync"
 
 	"github.com/gorilla/websocket"
 
 	"nofelet/decorator"
 	"nofelet/internal/domain/chat/controller/view"
+	"nofelet/internal/domain/event"
 )
 
 var (
@@ -32,10 +34,8 @@ type Room struct {
 
 // Client - информация о клиенте
 type Client struct {
-	ID     string
 	RoomID string
-	Nick   string      // Ник участника звонка
-	Send   chan []byte // Канал для writePump
+	Nick   string // Ник участника звонка
 	Conn   *websocket.Conn
 }
 
@@ -92,14 +92,28 @@ func (h *Hub) Join(cm *decorator.ConnectionManager, j view.JoinMessagePayload) e
 	}
 	room.mu.Unlock()
 
-	// todo Шлет user_joined всем остальным в комнате.
-	// todo Шлет room_state новому участнику.
+	// шлет JoinEvent всем остальным в комнате
+	if bErr := h.Broadcast(
+		WithEventType(event.JoinEvent),
+		WithJoinMessagePayload(j),
+		WithWSConnection(cm.Conn),
+	); bErr != nil {
+		return bErr
+	}
+
+	// шлет RoomStateEvent новому участнику.
+	room.mu.Lock()
+	clients := maps.Clone(room.Clients)
+	room.mu.Unlock()
+	if cErr := cm.WriteJSON(); cErr != nil {
+		return cErr
+	}
 
 	return nil
 }
 
 // Leave - Обрабатывает событие leave пользователя
-func (h *Hub) Leave(l view.LeaveMessagePayload) error {
+func (h *Hub) Leave(cm *decorator.ConnectionManager, l view.LeaveMessagePayload) error {
 	// находим комнату с uuid
 	room, ok := h.Rooms[l.ChatID]
 	if !ok {
@@ -110,13 +124,51 @@ func (h *Hub) Leave(l view.LeaveMessagePayload) error {
 	delete(room.Clients, l.Nick)
 	room.mu.Unlock()
 
-	// todo Шлет user_left всем остальным в комнате.
+	// шлет JoinEvent всем остальным в комнате
+	if bErr := h.Broadcast(
+		WithEventType(event.LeaveEvent),
+		WithLeaveMessagePayload(l),
+		WithWSConnection(cm.Conn),
+	); bErr != nil {
+		return bErr
+	}
 
 	return nil
 }
 
 // Broadcast - бродкастит события всем в чате
-func (h *Hub) Broadcast() {}
+func (h *Hub) Broadcast(options ...Option) error {
+	mt := NewMessageTypes()
+
+	for _, option := range options {
+		option(mt)
+	}
+
+	switch mt.EventType {
+	case event.JoinEvent:
+		chatID := mt.JoinMessagePayload.ChatID
+		room := h.Rooms[chatID]
+		for _, client := range room.Clients {
+			if mt.ws != client.Conn {
+				if err := client.Conn.WriteJSON(mt.JoinMessagePayload); err != nil {
+					return err
+				}
+			}
+		}
+	case event.LeaveEvent:
+		chatID := mt.LeaveMessagePayload.ChatID
+		room := h.Rooms[chatID]
+		for _, client := range room.Clients {
+			if mt.ws != client.Conn {
+				if err := client.Conn.WriteJSON(mt.LeaveMessagePayload); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
 
 // Text - Обрабатывает событие text (текстовый тип сообщения)
 func (h *Hub) Text(m view.SendMessagePayload) error {
