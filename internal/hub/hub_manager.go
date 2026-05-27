@@ -1,8 +1,8 @@
 package hub
 
 import (
+	"encoding/json"
 	"errors"
-	"maps"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -94,18 +94,21 @@ func (h *Hub) Join(cm *decorator.ConnectionManager, j view.JoinMessagePayload) e
 
 	// шлет JoinEvent всем остальным в комнате
 	if bErr := h.Broadcast(
-		WithEventType(event.JoinEvent),
+		WithEventType(event.UserJoinedEvent),
 		WithJoinMessagePayload(j),
 		WithWSConnection(cm.Conn),
 	); bErr != nil {
 		return bErr
 	}
 
+	// создает событие RoomStateEvent
+	roomStateEvent, eErr := createRoomStateEvent(room)
+	if eErr != nil {
+		return eErr
+	}
+
 	// шлет RoomStateEvent новому участнику.
-	room.mu.Lock()
-	clients := maps.Clone(room.Clients)
-	room.mu.Unlock()
-	if cErr := cm.WriteJSON(); cErr != nil {
+	if cErr := cm.WriteJSON(roomStateEvent); cErr != nil {
 		return cErr
 	}
 
@@ -124,9 +127,9 @@ func (h *Hub) Leave(cm *decorator.ConnectionManager, l view.LeaveMessagePayload)
 	delete(room.Clients, l.Nick)
 	room.mu.Unlock()
 
-	// шлет JoinEvent всем остальным в комнате
+	// шлет UserLeftEvent всем остальным в комнате
 	if bErr := h.Broadcast(
-		WithEventType(event.LeaveEvent),
+		WithEventType(event.UserLeftEvent),
 		WithLeaveMessagePayload(l),
 		WithWSConnection(cm.Conn),
 	); bErr != nil {
@@ -145,22 +148,22 @@ func (h *Hub) Broadcast(options ...Option) error {
 	}
 
 	switch mt.EventType {
-	case event.JoinEvent:
+	case event.UserJoinedEvent:
 		chatID := mt.JoinMessagePayload.ChatID
 		room := h.Rooms[chatID]
 		for _, client := range room.Clients {
 			if mt.ws != client.Conn {
-				if err := client.Conn.WriteJSON(mt.JoinMessagePayload); err != nil {
+				if err := client.Conn.WriteJSON(mt.JoinMessagePayload); err != nil { // todo посылать через Event struct, а не просто payload
 					return err
 				}
 			}
 		}
-	case event.LeaveEvent:
+	case event.UserLeftEvent:
 		chatID := mt.LeaveMessagePayload.ChatID
 		room := h.Rooms[chatID]
 		for _, client := range room.Clients {
 			if mt.ws != client.Conn {
-				if err := client.Conn.WriteJSON(mt.LeaveMessagePayload); err != nil {
+				if err := client.Conn.WriteJSON(mt.LeaveMessagePayload); err != nil { // todo посылать через Event struct, а не просто payload
 					return err
 				}
 			}
@@ -170,16 +173,41 @@ func (h *Hub) Broadcast(options ...Option) error {
 	return nil
 }
 
-// Text - Обрабатывает событие text (текстовый тип сообщения)
-func (h *Hub) Text(m view.SendMessagePayload) error {
+// SendMessage - Обрабатывает событие text (текстовый тип сообщения)
+func (h *Hub) SendMessage(m view.SendMessagePayload) error {
 	recipient := h.GetRecipient(m)
 	if recipient == nil {
 		return errChatOrRecipientNotFound
 	}
 
-	if err := recipient.Conn.WriteJSON(m); err != nil {
+	if err := recipient.Conn.WriteJSON(m); err != nil { // todo посылать через Event struct, а не просто SendMessagePayload
 		return err
 	}
 
 	return nil
+}
+
+// createRoomStateEvent - создает событие RoomStateEvent
+func createRoomStateEvent(room *Room) (view.Event, error) {
+	counter := 1
+	clients := make(map[int]string, len(room.Clients))
+
+	for _, client := range room.Clients {
+		clients[counter] = client.Nick
+		counter++
+	}
+
+	payloadData := map[string]interface{}{
+		"users": clients,
+	}
+
+	payloadBytes, err := json.Marshal(payloadData)
+	if err != nil {
+		return view.Event{}, err
+	}
+
+	return view.Event{
+		Type:    event.RoomStateEvent,
+		Payload: payloadBytes,
+	}, nil
 }

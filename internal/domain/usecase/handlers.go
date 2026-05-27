@@ -24,6 +24,10 @@ func readPump(
 ) {
 	ticker := time.NewTicker(event.PingPeriod)
 	defer func() {
+		// if lErr := chat.Leave(cm); lErr != nil { // todo придумать как вызвать это тут
+		// 	log.Error(lErr.Error())
+		// }
+
 		ticker.Stop()
 		cm.Close()
 	}()
@@ -41,7 +45,6 @@ func readPump(
 			if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
 				return
 			}
-
 			if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -99,10 +102,10 @@ func writePump(
 	}
 }
 
-// dispatcher - Определяет тип события по чтению
+// dispatcher - Обрабатывает события от клиента
 func dispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub, log *slog.Logger) error {
 	switch e.Type {
-	case event.JoinEvent:
+	case event.JoinRoomEvent:
 		var j view.JoinMessagePayload
 		if err := json.Unmarshal(e.Payload, &j); err != nil {
 			log.Error("failed to unmarshal message payload", "err", err)
@@ -111,22 +114,13 @@ func dispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub, lo
 		if jErr := chat.Join(cm, j); jErr != nil {
 			log.Error("join handler", "err", jErr)
 		}
-	case event.LeaveEvent:
-		var l view.LeaveMessagePayload
-		if err := json.Unmarshal(e.Payload, &l); err != nil {
-			log.Error("failed to unmarshal message payload", "err", err)
-		}
-
-		if lErr := chat.Leave(cm, l); lErr != nil {
-			log.Error("leave handler", "err", lErr)
-		}
-	case event.TextEvent:
+	case event.SendMessageEvent:
 		var m view.SendMessagePayload
 		if err := json.Unmarshal(e.Payload, &m); err != nil {
 			log.Error("failed to unmarshal typing payload", "err", err)
 		}
 
-		if tErr := chat.Text(m); tErr != nil {
+		if tErr := chat.SendMessage(m); tErr != nil {
 			log.Error("handler", "err", tErr)
 		}
 	}

@@ -29,11 +29,6 @@ func (c *Controller) GetChat(ctx *gin.Context) {
 	chat.Init(uuid)
 
 	dConn := decorator.New(uConn, c.log, c.cfg)
-	defer func() {
-		if err := dConn.Close(); err != nil {
-			c.log.Error("close connection", "err", err)
-		}
-	}()
 
 	if cErr := c.uc.Chat(ctx, dConn, chat); cErr != nil {
 		c.log.Error("use case chat", "err", cErr)
