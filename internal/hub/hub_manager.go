@@ -101,14 +101,20 @@ func (h *Hub) Join(cm *decorator.ConnectionManager, j view.JoinMessagePayload) e
 		return bErr
 	}
 
+	// создает payload для события RoomStateEvent
+	payload, pErr := createPayload(room)
+	if pErr != nil {
+		return pErr
+	}
+
 	// создает событие RoomStateEvent
-	roomStateEvent, eErr := createRoomStateEvent(room)
+	rsEvent, eErr := newEvent(event.RoomStateEvent, payload)
 	if eErr != nil {
 		return eErr
 	}
 
 	// шлет RoomStateEvent новому участнику.
-	if cErr := cm.WriteJSON(roomStateEvent); cErr != nil {
+	if cErr := cm.WriteJSON(rsEvent); cErr != nil {
 		return cErr
 	}
 
@@ -151,9 +157,18 @@ func (h *Hub) Broadcast(options ...Option) error {
 	case event.UserJoinedEvent:
 		chatID := mt.JoinMessagePayload.ChatID
 		room := h.Rooms[chatID]
+
+		ujEvent, eErr := newEvent(
+			event.UserJoinedEvent,
+			map[string]interface{}{"user": mt.JoinMessagePayload},
+		)
+		if eErr != nil {
+			return eErr
+		}
+
 		for _, client := range room.Clients {
 			if mt.ws != client.Conn {
-				if err := client.Conn.WriteJSON(mt.JoinMessagePayload); err != nil { // todo посылать через Event struct, а не просто payload
+				if err := client.Conn.WriteJSON(ujEvent); err != nil {
 					return err
 				}
 			}
@@ -161,9 +176,18 @@ func (h *Hub) Broadcast(options ...Option) error {
 	case event.UserLeftEvent:
 		chatID := mt.LeaveMessagePayload.ChatID
 		room := h.Rooms[chatID]
+
+		ulEvent, eErr := newEvent(
+			event.UserLeftEvent,
+			map[string]interface{}{"user": mt.LeaveMessagePayload},
+		)
+		if eErr != nil {
+			return eErr
+		}
+
 		for _, client := range room.Clients {
 			if mt.ws != client.Conn {
-				if err := client.Conn.WriteJSON(mt.LeaveMessagePayload); err != nil { // todo посылать через Event struct, а не просто payload
+				if err := client.Conn.WriteJSON(ulEvent); err != nil {
 					return err
 				}
 			}
@@ -180,15 +204,23 @@ func (h *Hub) SendMessage(m view.SendMessagePayload) error {
 		return errChatOrRecipientNotFound
 	}
 
-	if err := recipient.Conn.WriteJSON(m); err != nil { // todo посылать через Event struct, а не просто SendMessagePayload
+	smEvent, eErr := newEvent(
+		event.NewMessageEvent,
+		map[string]interface{}{"user": m},
+	)
+	if eErr != nil {
+		return eErr
+	}
+
+	if err := recipient.Conn.WriteJSON(smEvent); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// createRoomStateEvent - создает событие RoomStateEvent
-func createRoomStateEvent(room *Room) (view.Event, error) {
+// createPayload - подготавливает payload для события RoomStateEvent
+func createPayload(room *Room) (map[string]interface{}, error) {
 	counter := 1
 	clients := make(map[int]string, len(room.Clients))
 
@@ -197,17 +229,18 @@ func createRoomStateEvent(room *Room) (view.Event, error) {
 		counter++
 	}
 
-	payloadData := map[string]interface{}{
-		"users": clients,
-	}
+	return map[string]interface{}{"users": clients}, nil
+}
 
-	payloadBytes, err := json.Marshal(payloadData)
+// newEvent - создает событие
+func newEvent(eventType string, data interface{}) (view.Event, error) {
+	payloadBytes, err := json.Marshal(data)
 	if err != nil {
 		return view.Event{}, err
 	}
 
 	return view.Event{
-		Type:    event.RoomStateEvent,
+		Type:    eventType,
 		Payload: payloadBytes,
 	}, nil
 }

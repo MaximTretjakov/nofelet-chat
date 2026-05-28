@@ -42,7 +42,3 @@ type JoinMessagePayload struct {
 type LeaveMessagePayload struct {
 	JoinMessagePayload
 }
-
-// RoomStateMessagePayload - активные пользователи на данный момент
-type RoomStateMessagePayload struct {
-}
