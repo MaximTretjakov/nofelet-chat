@@ -38,6 +38,11 @@ type JoinMessagePayload struct {
 	Nick   string `json:"nick"`    // Ник пользователя
 }
 
+// UserJoinedMessagePayload - Приходит всем, когда кто-то новый подключился
+type UserJoinedMessagePayload struct {
+	Nick string `json:"nick"` // Ник пользователя
+}
+
 // LeaveMessagePayload - сообщение о выходе/дисконнекте пользователя
 type LeaveMessagePayload struct {
 	JoinMessagePayload

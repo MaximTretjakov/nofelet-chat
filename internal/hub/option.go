@@ -7,13 +7,14 @@ import (
 )
 
 type MessageTypes struct {
-	ws                  *websocket.Conn
-	EventType           string
-	TypingPayload       view.TypingPayload
-	JoinMessagePayload  view.JoinMessagePayload
-	LeaveMessagePayload view.LeaveMessagePayload
-	SendMessagePayload  view.SendMessagePayload
-	FileMessagePayload  view.FileMessagePayload
+	ws                       *websocket.Conn
+	EventType                string
+	TypingPayload            view.TypingPayload
+	JoinMessagePayload       view.JoinMessagePayload
+	LeaveMessagePayload      view.LeaveMessagePayload
+	SendMessagePayload       view.SendMessagePayload
+	FileMessagePayload       view.FileMessagePayload
+	UserJoinedMessagePayload view.UserJoinedMessagePayload
 }
 
 func NewMessageTypes() *MessageTypes {
@@ -61,5 +62,11 @@ func WithSendMessagePayload(payload view.SendMessagePayload) Option {
 func WithFileMessagePayload(payload view.FileMessagePayload) Option {
 	return func(mt *MessageTypes) {
 		mt.FileMessagePayload = payload
+	}
+}
+
+func WithUserJoinedMessagePayload(payload view.UserJoinedMessagePayload) Option {
+	return func(mt *MessageTypes) {
+		mt.UserJoinedMessagePayload = payload
 	}
 }

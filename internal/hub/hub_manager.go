@@ -95,7 +95,7 @@ func (h *Hub) Join(cm *decorator.ConnectionManager, j view.JoinMessagePayload) e
 	// шлет JoinEvent всем остальным в комнате
 	if bErr := h.Broadcast(
 		WithEventType(event.UserJoinedEvent),
-		WithJoinMessagePayload(j),
+		WithUserJoinedMessagePayload(view.UserJoinedMessagePayload{Nick: j.Nick}),
 		WithWSConnection(cm.Conn),
 	); bErr != nil {
 		return bErr
@@ -160,7 +160,7 @@ func (h *Hub) Broadcast(options ...Option) error {
 
 		ujEvent, eErr := newEvent(
 			event.UserJoinedEvent,
-			map[string]interface{}{"user": mt.JoinMessagePayload},
+			map[string]interface{}{"user_joined": mt.UserJoinedMessagePayload},
 		)
 		if eErr != nil {
 			return eErr
@@ -179,7 +179,7 @@ func (h *Hub) Broadcast(options ...Option) error {
 
 		ulEvent, eErr := newEvent(
 			event.UserLeftEvent,
-			map[string]interface{}{"user": mt.LeaveMessagePayload},
+			map[string]interface{}{"leave_room": mt.LeaveMessagePayload},
 		)
 		if eErr != nil {
 			return eErr
@@ -206,7 +206,7 @@ func (h *Hub) SendMessage(m view.SendMessagePayload) error {
 
 	smEvent, eErr := newEvent(
 		event.NewMessageEvent,
-		map[string]interface{}{"user": m},
+		map[string]interface{}{"new_message": m},
 	)
 	if eErr != nil {
 		return eErr
@@ -229,7 +229,7 @@ func createPayload(room *Room) (map[string]interface{}, error) {
 		counter++
 	}
 
-	return map[string]interface{}{"users": clients}, nil
+	return map[string]interface{}{"room_state": clients}, nil
 }
 
 // newEvent - создает событие
