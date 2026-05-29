@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -22,13 +21,9 @@ func readPump(
 	chat *hub.Hub,
 	log *slog.Logger,
 ) {
-	ticker := time.NewTicker(event.PingPeriod)
+	// ticker := time.NewTicker(event.PingPeriod)
 	defer func() {
-		// if lErr := chat.Leave(cm); lErr != nil { // todo придумать как вызвать это тут
-		// 	log.Error(lErr.Error())
-		// }
-
-		ticker.Stop()
+		// ticker.Stop()
 		cm.Close()
 	}()
 
@@ -40,14 +35,14 @@ func readPump(
 			if err := dispatcher(msg, cm, chat, log); err != nil {
 				return
 			}
-		case <-ticker.C:
-			// Время слать Ping фронтенду, чтобы проверить, жив ли он
-			if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-				return
-			}
-			if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
+		// case <-ticker.C:
+		// 	// Время слать Ping фронтенду, чтобы проверить, жив ли он
+		// 	if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		// 		return
+		// 	}
+		// 	if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
+		// 		return
+		// 	}
 		case <-ctx.Done():
 			// Сигнал от Graceful Shutdown сервера
 			if err := cm.WriteMessage(
@@ -68,9 +63,9 @@ func writePump(
 	chat *hub.Hub,
 	log *slog.Logger,
 ) {
-	ticker := time.NewTicker(event.PingPeriod)
+	// ticker := time.NewTicker(event.PingPeriod)
 	defer func() {
-		ticker.Stop()
+		// ticker.Stop()
 		cm.Close()
 	}()
 
@@ -81,15 +76,15 @@ func writePump(
 			if err := dispatcher(msg, cm, chat, log); err != nil {
 				return
 			}
-		case <-ticker.C:
-			// Время слать Ping фронтенду, чтобы проверить, жив ли он
-			if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-				return
-			}
-
-			if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
+		// case <-ticker.C:
+		// 	// Время слать Ping фронтенду, чтобы проверить, жив ли он
+		// 	if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		// 		return
+		// 	}
+		//
+		// 	if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
+		// 		return
+		// 	}
 		case <-ctx.Done():
 			// Сигнал от Graceful Shutdown сервера
 			if err := cm.WriteMessage(

@@ -88,13 +88,14 @@ func (h *Hub) Join(cm *decorator.ConnectionManager, j view.JoinMessagePayload) e
 	room.mu.Lock()
 	room.Clients[j.Nick] = &Client{
 		Nick: j.Nick,
-		Conn: cm.Conn,
+		Conn: cm.Conn, // todo как-то задекорировать чтобы видеть в логах
 	}
 	room.mu.Unlock()
 
 	// шлет JoinEvent всем остальным в комнате
 	if bErr := h.Broadcast(
 		WithEventType(event.UserJoinedEvent),
+		WithJoinMessagePayload(j),
 		WithUserJoinedMessagePayload(view.UserJoinedMessagePayload{Nick: j.Nick}),
 		WithWSConnection(cm.Conn),
 	); bErr != nil {
@@ -168,11 +169,14 @@ func (h *Hub) Broadcast(options ...Option) error {
 
 		for _, client := range room.Clients {
 			if mt.ws != client.Conn {
+				room.mu.Lock()
 				if err := client.Conn.WriteJSON(ujEvent); err != nil {
 					return err
 				}
+				room.mu.Unlock()
 			}
 		}
+
 	case event.UserLeftEvent:
 		chatID := mt.LeaveMessagePayload.ChatID
 		room := h.Rooms[chatID]
@@ -186,11 +190,13 @@ func (h *Hub) Broadcast(options ...Option) error {
 		}
 
 		for _, client := range room.Clients {
+			room.mu.Lock()
 			if mt.ws != client.Conn {
 				if err := client.Conn.WriteJSON(ulEvent); err != nil {
 					return err
 				}
 			}
+			room.mu.Lock()
 		}
 	}
 
@@ -221,12 +227,9 @@ func (h *Hub) SendMessage(m view.SendMessagePayload) error {
 
 // createPayload - подготавливает payload для события RoomStateEvent
 func createPayload(room *Room) (map[string]interface{}, error) {
-	counter := 1
-	clients := make(map[int]string, len(room.Clients))
-
+	clients := make(map[string]string, len(room.Clients))
 	for _, client := range room.Clients {
-		clients[counter] = client.Nick
-		counter++
+		clients[client.Nick] = client.Nick
 	}
 
 	return map[string]interface{}{"room_state": clients}, nil
