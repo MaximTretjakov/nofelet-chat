@@ -3,71 +3,27 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log/slog"
-	"time"
 
 	"github.com/gorilla/websocket"
 
 	"nofelet/decorator"
 	"nofelet/internal/domain/chat/controller/view"
-	"nofelet/pkg/singleton"
+	"nofelet/internal/domain/event"
+	"nofelet/internal/hub"
 )
-
-const (
-	joinEvent  = "join"
-	textEvent  = "text"
-	pongWait   = 60 * time.Second
-	pingPeriod = (pongWait * 9) / 10
-)
-
-var (
-	errChatRoomNotFound        = errors.New("chat room not found")
-	errChatOrRecipientNotFound = errors.New("chat room or recipient not found")
-)
-
-// join - Обрабатывает событие join присоединение к чату
-func join(cm *decorator.ConnectionManager, chat *singleton.Chat, j view.JoinMessagePayload) error {
-	// находим комнату с uuid
-	room, ok := chat.Rooms[j.ChatID]
-	if !ok {
-		return errChatRoomNotFound
-	}
-
-	// если комната есть регаемся в ней
-	room = append(room, &singleton.ChatRoom{
-		Conn: cm.Conn,
-		Nick: j.Nick,
-	})
-
-	return nil
-}
-
-// text - Обрабатывает событие text (текстовый тип сообщения)
-func text(chat *singleton.Chat, m view.SendMessagePayload) error {
-	recipient := chat.GetUserByName(m)
-	if recipient == nil {
-		return errChatOrRecipientNotFound
-	}
-
-	if err := recipient.Conn.WriteJSON(m); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 // readPump - Обрабатывает чтение из сокета
 func readPump(
 	ctx context.Context,
 	dataCh chan view.Event,
 	cm *decorator.ConnectionManager,
-	chat *singleton.Chat,
+	chat *hub.Hub,
 	log *slog.Logger,
 ) {
-	ticker := time.NewTicker(pingPeriod)
+	// ticker := time.NewTicker(event.PingPeriod)
 	defer func() {
-		ticker.Stop()
+		// ticker.Stop()
 		cm.Close()
 	}()
 
@@ -76,18 +32,17 @@ func readPump(
 	for {
 		select {
 		case msg := <-dataCh:
-			if err := readDispatcher(msg, cm, chat, log); err != nil {
+			if err := dispatcher(msg, cm, chat, log); err != nil {
 				return
 			}
-		case <-ticker.C:
-			// Время слать Ping фронтенду, чтобы проверить, жив ли он
-			if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-				return
-			}
-
-			if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
+		// case <-ticker.C:
+		// 	// Время слать Ping фронтенду, чтобы проверить, жив ли он
+		// 	if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		// 		return
+		// 	}
+		// 	if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
+		// 		return
+		// 	}
 		case <-ctx.Done():
 			// Сигнал от Graceful Shutdown сервера
 			if err := cm.WriteMessage(
@@ -105,12 +60,12 @@ func writePump(
 	ctx context.Context,
 	dataCh chan view.Event,
 	cm *decorator.ConnectionManager,
-	chat *singleton.Chat,
+	chat *hub.Hub,
 	log *slog.Logger,
 ) {
-	ticker := time.NewTicker(pingPeriod)
+	// ticker := time.NewTicker(event.PingPeriod)
 	defer func() {
-		ticker.Stop()
+		// ticker.Stop()
 		cm.Close()
 	}()
 
@@ -118,18 +73,18 @@ func writePump(
 		select {
 		case msg := <-dataCh:
 			// Пришло сообщение для отправки клиенту
-			if err := writeDispatcher(msg, chat, log); err != nil {
+			if err := dispatcher(msg, cm, chat, log); err != nil {
 				return
 			}
-		case <-ticker.C:
-			// Время слать Ping фронтенду, чтобы проверить, жив ли он
-			if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-				return
-			}
-
-			if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
+		// case <-ticker.C:
+		// 	// Время слать Ping фронтенду, чтобы проверить, жив ли он
+		// 	if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		// 		return
+		// 	}
+		//
+		// 	if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
+		// 		return
+		// 	}
 		case <-ctx.Done():
 			// Сигнал от Graceful Shutdown сервера
 			if err := cm.WriteMessage(
@@ -142,33 +97,25 @@ func writePump(
 	}
 }
 
-// readDispatcher - Определяет тип события по чтению
-func readDispatcher(e view.Event, cm *decorator.ConnectionManager, chat *singleton.Chat, log *slog.Logger) error {
+// dispatcher - Обрабатывает события от клиента
+func dispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub, log *slog.Logger) error {
 	switch e.Type {
-	case joinEvent:
+	case event.JoinRoomEvent:
 		var j view.JoinMessagePayload
 		if err := json.Unmarshal(e.Payload, &j); err != nil {
 			log.Error("failed to unmarshal message payload", "err", err)
 		}
 
-		if jErr := join(cm, chat, j); jErr != nil {
+		if jErr := chat.Join(cm, j); jErr != nil {
 			log.Error("join handler", "err", jErr)
 		}
-	}
-
-	return nil
-}
-
-// writeDispatcher - Определяет тип события по записи
-func writeDispatcher(e view.Event, chat *singleton.Chat, log *slog.Logger) error {
-	switch e.Type {
-	case textEvent:
+	case event.SendMessageEvent:
 		var m view.SendMessagePayload
 		if err := json.Unmarshal(e.Payload, &m); err != nil {
 			log.Error("failed to unmarshal typing payload", "err", err)
 		}
 
-		if tErr := text(chat, m); tErr != nil {
+		if tErr := chat.SendMessage(m); tErr != nil {
 			log.Error("handler", "err", tErr)
 		}
 	}

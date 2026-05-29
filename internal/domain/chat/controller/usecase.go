@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"nofelet/decorator"
-	"nofelet/pkg/singleton"
+	"nofelet/internal/hub"
 )
 
 type UseCase interface {
 	// Chat - логика чата
-	Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *singleton.Chat) error
+	Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *hub.Hub) error
 }

@@ -5,10 +5,10 @@ import (
 
 	"nofelet/decorator"
 	"nofelet/internal/domain/chat/controller/view"
-	"nofelet/pkg/singleton"
+	"nofelet/internal/hub"
 )
 
-func (uc *UseCase) Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *singleton.Chat) error {
+func (uc *UseCase) Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *hub.Hub) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	defer func() {
