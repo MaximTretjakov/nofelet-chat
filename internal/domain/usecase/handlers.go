@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -13,84 +14,49 @@ import (
 	"nofelet/internal/hub"
 )
 
-// readPump - Обрабатывает чтение из сокета
-func readPump(
+const (
+	delta      = 10 * time.Second // Смещаем время следубщего пинга
+	pingPeriod = 10 * time.Second // Как часто слать Ping
+)
+
+// handler - Обрабатывает клиентские сообщения
+func handler(
 	ctx context.Context,
 	dataCh chan view.Event,
 	cm *decorator.ConnectionManager,
 	chat *hub.Hub,
 	log *slog.Logger,
 ) {
-	// ticker := time.NewTicker(event.PingPeriod)
+	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		// ticker.Stop()
-		cm.Close()
-	}()
-
-	// ... тут настройка Ping/Pong таймаутов из Кейса 1 ...
-
-	for {
-		select {
-		case msg := <-dataCh:
-			if err := dispatcher(msg, cm, chat, log); err != nil {
-				return
-			}
-		// case <-ticker.C:
-		// 	// Время слать Ping фронтенду, чтобы проверить, жив ли он
-		// 	if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-		// 		return
-		// 	}
-		// 	if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
-		// 		return
-		// 	}
-		case <-ctx.Done():
-			// Сигнал от Graceful Shutdown сервера
-			if err := cm.WriteMessage(
-				websocket.CloseMessage,
-				websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Server closed connection"),
-			); err != nil {
-				return
-			}
+		ticker.Stop()
+		if err := cm.Close(); err != nil {
+			log.Error("chat handler", "err", err)
 		}
-	}
-}
-
-// writePump - Обрабатывает запись в сокет
-func writePump(
-	ctx context.Context,
-	dataCh chan view.Event,
-	cm *decorator.ConnectionManager,
-	chat *hub.Hub,
-	log *slog.Logger,
-) {
-	// ticker := time.NewTicker(event.PingPeriod)
-	defer func() {
-		// ticker.Stop()
-		cm.Close()
 	}()
 
 	for {
 		select {
 		case msg := <-dataCh:
-			// Пришло сообщение для отправки клиенту
 			if err := dispatcher(msg, cm, chat, log); err != nil {
 				return
 			}
-		// case <-ticker.C:
-		// 	// Время слать Ping фронтенду, чтобы проверить, жив ли он
-		// 	if err := cm.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-		// 		return
-		// 	}
-		//
-		// 	if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
-		// 		return
-		// 	}
+		case <-ticker.C:
+			// Ping фронтенду, жив ли он?
+			if err := cm.SetWriteDeadline(time.Now().Add(delta)); err != nil {
+				log.Error("chat handler", "err", err)
+				return
+			}
+			if err := cm.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Error("chat handler", "err", err)
+				return
+			}
 		case <-ctx.Done():
-			// Сигнал от Graceful Shutdown сервера
 			if err := cm.WriteMessage(
 				websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Server closed connection"),
 			); err != nil {
+				log.Error("chat handler", "err", err)
 				return
 			}
 		}

@@ -16,7 +16,7 @@ type ConnectionManager struct {
 	remoteIP string
 }
 
-// New - создает логирующий декоратор
+// New - конструктор создает логирующий декоратор
 func New(conn *websocket.Conn, logger *slog.Logger, cfg *config.Config) *ConnectionManager {
 	return &ConnectionManager{
 		Conn:     conn,
@@ -40,7 +40,7 @@ func (cm *ConnectionManager) WriteJSON(v interface{}) error {
 	return err
 }
 
-// ReadJSON - перехватывает получение данных
+// ReadJSON - - логирует чтение данных
 func (cm *ConnectionManager) ReadJSON(v interface{}) error {
 	err := cm.Conn.ReadJSON(v)
 	if err != nil {
