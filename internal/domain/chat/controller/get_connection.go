@@ -14,6 +14,7 @@ var errChatRoomNotFound = errors.New("chat room not found")
 
 // GetChat - /chat создает чат
 func (c *Controller) GetChat(ctx *gin.Context) {
+	// Проверяем uuid комнаты
 	uuid := ctx.Param("uuid")
 	if len(uuid) == 0 {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, errChatRoomNotFound)
@@ -25,11 +26,19 @@ func (c *Controller) GetChat(ctx *gin.Context) {
 		c.log.Error("socket creation", "err", sErr)
 	}
 
+	// Создаем комнату
 	chat := hub.NewChatRoom()
 	chat.Init(uuid)
 
+	// Создаем декоратор коннекшена
 	dConn := decorator.New(uConn, c.log, c.cfg)
+	defer func() {
+		if err := dConn.Close(); err != nil {
+			c.log.Error("socket close error", "err", err)
+		}
+	}()
 
+	// Юзкейс логики
 	if cErr := c.uc.Chat(ctx, dConn, chat); cErr != nil {
 		c.log.Error("use case chat", "err", cErr)
 	}

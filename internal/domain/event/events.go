@@ -1,7 +1,5 @@
 package event
 
-import "time"
-
 const (
 	JoinRoomEvent    = "join_room"    // c->s Отправляется сразу после установки WS-соединения
 	SendMessageEvent = "send_message" // c->s Отправляется, когда юзер нажал «Отправить» в чате
@@ -10,7 +8,4 @@ const (
 	UserJoinedEvent = "user_joined" // s->c Приходит всем, когда кто-то новый подключился
 	UserLeftEvent   = "leave_room"  // s->c Приходит всем, когда кто-то отключился
 	NewMessageEvent = "new_message" // s->c Приходит всем, когда кто-то прислал текстовое сообщение
-
-	PongWait   = 60 * time.Second
-	PingPeriod = (PongWait * 9) / 10
 )
