@@ -2,11 +2,15 @@ package usecase
 
 import (
 	"context"
+	"errors"
+	"net"
 
 	"nofelet/decorator"
 	"nofelet/internal/domain/chat/controller/view"
 	"nofelet/internal/hub"
 )
+
+var errClientDisconnected = errors.New("client is disconnected")
 
 func (uc *UseCase) Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *hub.Hub) error {
 	var e view.Event
@@ -25,9 +29,14 @@ func (uc *UseCase) Chat(ctx context.Context, cm *decorator.ConnectionManager, ch
 
 	// Прием входящих сообщений
 	for {
-		if readErr := cm.ReadJSON(&e); readErr != nil {
-			uc.log.Error("socket read json", "err", readErr)
-			return readErr
+		if rErr := cm.ReadJSON(&e); rErr != nil {
+			// Проверяем, является ли ошибка таймаутом
+			var netErr net.Error
+			if errors.As(rErr, &netErr) && netErr.Timeout() {
+				uc.log.Error("use case chat", "err", errClientDisconnected)
+			}
+			uc.log.Error("use case chat", "err", rErr)
+			return rErr
 		}
 
 		dataCh <- e
