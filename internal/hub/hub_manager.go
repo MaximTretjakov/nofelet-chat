@@ -29,7 +29,7 @@ type Hub struct {
 // Room - управляет конкретной комнатой чата
 type Room struct {
 	mu      sync.RWMutex
-	Clients map[string]*Client // key = userID, value = инфо о клиенте
+	Clients map[*websocket.Conn]*Client // key = userID, value = инфо о клиенте
 }
 
 // Client - информация о клиенте
@@ -54,7 +54,7 @@ func (h *Hub) Init(uuid string) {
 	h.mu.Lock()
 	if _, ok := h.Rooms[uuid]; !ok {
 		h.Rooms[uuid] = &Room{
-			Clients: make(map[string]*Client),
+			Clients: make(map[*websocket.Conn]*Client),
 		}
 	}
 	h.mu.Unlock()
@@ -86,7 +86,7 @@ func (h *Hub) Join(cm *decorator.ConnectionManager, j view.JoinMessagePayload) e
 
 	// если комната есть регаемся в ней
 	room.mu.Lock()
-	room.Clients[j.Nick] = &Client{
+	room.Clients[cm.Conn] = &Client{
 		Nick: j.Nick,
 		Conn: cm.Conn, // todo как-то задекорировать чтобы видеть в логах
 	}
@@ -131,7 +131,8 @@ func (h *Hub) Leave(cm *decorator.ConnectionManager, l view.LeaveMessagePayload)
 	}
 
 	room.mu.Lock()
-	delete(room.Clients, l.Nick)
+	l.Nick = room.Clients[cm.Conn].Nick
+	delete(room.Clients, cm.Conn)
 	room.mu.Unlock()
 
 	// шлет UserLeftEvent всем остальным в комнате

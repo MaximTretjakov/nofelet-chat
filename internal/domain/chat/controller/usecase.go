@@ -9,5 +9,5 @@ import (
 
 type UseCase interface {
 	// Chat - логика чата
-	Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *hub.Hub) error
+	Chat(ctx context.Context, cm *decorator.ConnectionManager, chat *hub.Hub, uuid string) error
 }
