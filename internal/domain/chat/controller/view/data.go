@@ -45,5 +45,6 @@ type UserJoinedMessagePayload struct {
 
 // LeaveMessagePayload - сообщение о выходе/дисконнекте пользователя
 type LeaveMessagePayload struct {
-	JoinMessagePayload
+	ChatID string `json:"chat_id"` // ID комнаты чата
+	Nick   string `json:"nick"`    // Ник пользователя
 }
