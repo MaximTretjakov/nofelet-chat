@@ -39,15 +39,13 @@ jobs:
           go-version: '1.22'
 
       - name: golangci-lint
-        uses: golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v6
         with:
           version: v1.59
           args: --config=.golangci.yml --out-format=github-actions
 
   build-and-push:
     runs-on: ubuntu-latest
-    # Билд теперь зависит и от тестов, и от линтера (по желанию)
-    # Если хочешь, чтобы билд шел параллельно с линтером, убери needs
     needs: [test, lint]
     permissions:
       contents: read
