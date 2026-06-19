@@ -36,7 +36,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.24'
           cache: true
 
       - name: Go Mod Download
@@ -48,7 +48,8 @@ jobs:
           GO111MODULE: "on"
         with:
           version: v1.59
-          args: --config=.golangci.yml --out-format=github-actions --vendor ./...
+          skip-cache: true
+          args: --config=.golangci.yml --out-format=github-actions ./...
 
   Build-and-push:
     runs-on: ubuntu-latest
