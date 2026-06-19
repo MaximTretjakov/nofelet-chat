@@ -162,7 +162,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-          cache: true
+          cache: false
 
       - name: Go Mod Download
         run: go mod download
@@ -171,6 +171,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.59
+          skip-cache: true
           # Используем ./..., чтобы линтер сканировал все пакеты в текущей папке
           args: --config=.golangci.yml --out-format=github-actions ./...
 
