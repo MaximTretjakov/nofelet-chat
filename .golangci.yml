@@ -45,19 +45,11 @@ run:
   modules-download-mode: mod
   go: '1.24'
 
-# Полностью отключаем все линтеры, которые требуют анализа типов
+# Просто включаем то, что нужно.
+# Никаких disable-all, никаких конфликтов.
 linters:
-  disable-all: true
   enable:
-    - revive       # Стиль кода
-    - staticcheck  # Поиск багов
-    - unused       # Неиспользуемый код
-    - govet        # Базовые ошибки
-    - gosimple     # Упрощение кода
-
-issues:
-  # Этот блок игнорирует всё, что связано с ошибками сборки/типов
-  exclude-rules:
-    - linters:
-        - typecheck
-      text: ".*"
+    - govet
+    - staticcheck
+    - revive
+    - unused

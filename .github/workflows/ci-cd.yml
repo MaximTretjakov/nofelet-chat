@@ -173,7 +173,7 @@ jobs:
           version: v1.59
           skip-cache: true
           # Используем ./..., чтобы линтер сканировал все пакеты в текущей папке
-          args: --config=.golangci.yml --out-format=github-actions --disable=typecheck ./...
+          args: --config=.golangci.yml --out-format=github-actions ./...
 
   Build-and-push:
     runs-on: ubuntu-latest
