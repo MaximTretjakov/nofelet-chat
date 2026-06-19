@@ -8,6 +8,7 @@ issues:
         - typecheck
 
 run:
+  go: '1.25'
   timeout: 5m
   tests: false
   modules-download-mode: mod
