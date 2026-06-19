@@ -35,5 +35,5 @@ linters-settings:
 issues:
   exclude-use-default: false
   # ВАЖНО: чтобы не сойти с ума, можно регулировать количество ошибок через max-issues-per-linter: 1, 2 или 50
-  max-issues-per-linter: 5
+  max-issues-per-linter: 10
   max-same-issues: 0
