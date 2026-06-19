@@ -44,9 +44,11 @@ jobs:
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
+        env:
+          GO111MODULE: "on"
         with:
           version: v1.59
-          args: --config=.golangci.yml --out-format=github-actions ./...
+          args: --config=.golangci.yml --out-format=github-actions --vendor ./...
 
   Build-and-push:
     runs-on: ubuntu-latest
