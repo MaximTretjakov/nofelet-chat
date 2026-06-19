@@ -42,10 +42,15 @@ jobs:
       - name: Go Mod Download
         run: go mod download
 
+      - name: Check modules
+        run: go list -m all
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         env:
-          GO111MODULE: "on"
+#          GO111MODULE: "on"
+          GOPATH: /home/runner/go
+          GOMODCACHE: /home/runner/go/pkg/mod
         with:
           version: v1.59
           skip-cache: true
