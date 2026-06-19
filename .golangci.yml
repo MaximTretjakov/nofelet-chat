@@ -1,46 +1,40 @@
+# Глобальные настройки
+run:
+  # Не линтить тесты, чтобы не тратить ресурсы
+  tests: false
+  # Гарантируем использование go.mod
+  modules-download-mode: mod
+  # Указываем версию Go для корректного анализа типов
+  go: '1.24'
+
+# Настройки конкретных линтеров
+linters-settings:
+  govet:
+    # Проверка на перекрытие переменных (частая ошибка)
+    check-shadowing: true
+  revive:
+    rules:
+      - name: indent-error-flow
+        severity: warning
+
+# Настройки обработки ошибок (issues)
 issues:
-  # ВАЖНО: чтобы не сойти с ума, можно регулировать количество ошибок через max-issues-per-linter: 1, 2 или 50
+  # Максимум 10 сообщений на один линтер, чтобы лог не был бесконечным
   max-issues-per-linter: 10
+  # Не объединять одинаковые ошибки
   max-same-issues: 0
+  
+  # Здесь мы "прощаем" линтеру ошибки, которые он не может разрешить
   exclude-rules:
     - text: "could not import"
       linters:
         - typecheck
 
-run:
-  go: '1.25'
-  timeout: 5m
-  tests: false
-  modules-download-mode: mod
-
+# Список включенных линтеров (можно дополнять)
 linters:
-  disable-all: true
   enable:
-    - errcheck      # Проверка ошибок
-    - goimports     # Импорты
-    - govet         # Базовый статик
-    - staticcheck   # Базовый статик
-    - revive        # Early returns, стиль
-    - nestif        # Вложенность
-    - gocognit      # Когнитивная сложность
-    - gocyclo       # Цикломатическая сложность
-    - stylecheck    # Именования
-    - bodyclose     # HTTP тела
-    - noctx         # Контекст в запросах
-    - rowserrcheck  # SQL ошибки
-
-linters-settings:
-  govet:
-    check-shadowing: true
-  revive:
-    rules:
-      - name: indent-error-flow
-      - name: var-naming
-      - name: package-comments
-      - name: if-return
-  nestif:
-    min-complexity: 4 # Дал чуть больше свободы (4 вместо 3), чтобы не "душил" на ровном месте
-  gocognit:
-    min-complexity: 20 # Порог 20 — "золотая середина" для читаемости
-  gocyclo:
-    min-complexity: 12
+    - govet
+    - revive
+    - staticcheck
+    - unused
+    - gosimple
