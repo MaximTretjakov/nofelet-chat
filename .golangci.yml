@@ -1,13 +1,20 @@
+version: v1.59
+
 issues:
-  exclude-use-default: false
   # ВАЖНО: чтобы не сойти с ума, можно регулировать количество ошибок через max-issues-per-linter: 1, 2 или 50
   max-issues-per-linter: 10
   max-same-issues: 0
+  exclude-rules:
+    - text: "could not import"
+      linters:
+        - typecheck
 
 run:
   timeout: 5m
   tests: false
-  modules-download-mode: readonly
+  modules-download-mode: mod
+  allow-parallel-runners: true
+#  modules-download-mode: readonly
 
 linters:
   disable-all: true
