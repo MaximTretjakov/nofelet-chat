@@ -54,6 +54,7 @@ jobs:
         with:
           version: v1.59
           skip-cache: true
+          working-directory: .
           args: --config=.golangci.yml --out-format=github-actions ./...
 
   Build-and-push:

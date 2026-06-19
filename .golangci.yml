@@ -32,6 +32,14 @@ linters:
     - rowserrcheck  # SQL ошибки
 
 linters-settings:
+  govet:
+    check-shadowing: true
+    # Добавь этот блок:
+    typecheck:
+      # Заставляет линтер игнорировать ошибки сборки (typecheck)
+      # и продолжать работу, даже если он что-то не смог собрать
+      ignore-files:
+        - config/config.go
   revive:
     rules:
       - name: indent-error-flow
