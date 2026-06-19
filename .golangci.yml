@@ -1,0 +1,39 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck      # Проверка ошибок
+    - goimports     # Импорты
+    - govet         # Базовый статик
+    - staticcheck   # Базовый статик
+    - revive        # Early returns, стиль
+    - nestif        # Вложенность
+    - gocognit      # Когнитивная сложность
+    - gocyclo       # Цикломатическая сложность
+    - stylecheck    # Именования
+    - bodyclose     # HTTP тела
+    - noctx         # Контекст в запросах
+    - rowserrcheck  # SQL ошибки
+
+linters-settings:
+  revive:
+    rules:
+      - name: indent-error-flow
+      - name: var-naming
+      - name: package-comments
+      - name: if-return
+  nestif:
+    min-complexity: 4 # Дал чуть больше свободы (4 вместо 3), чтобы не "душил" на ровном месте
+  gocognit:
+    min-complexity: 20 # Порог 20 — "золотая середина" для читаемости
+  gocyclo:
+    min-complexity: 12
+
+issues:
+  exclude-use-default: false
+  # ВАЖНО: чтобы не сойти с ума, можно регулировать количество ошибок через max-issues-per-linter: 1, 2 или 50
+  max-issues-per-linter: 5
+  max-same-issues: 0
