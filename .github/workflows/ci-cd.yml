@@ -46,7 +46,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.59
-          args: --config=.golangci.yml --out-format=github-actions nofelet-chat/...
+          args: --config=.golangci.yml --out-format=github-actions ./...
 
   Build-and-push:
     runs-on: ubuntu-latest
