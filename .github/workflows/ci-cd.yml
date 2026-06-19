@@ -30,8 +30,15 @@ jobs:
           go list -m github.com/sethvargo/go-envconfig
           go doc github.com/sethvargo/go-envconfig || true
 
+      - name: Debug golangci config
+        run: |
+          pwd
+          ls -la
+          echo "===== .golangci.yml ====="
+          cat .golangci.yml
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.64.8
+          version: latest
           args: --config=.golangci.yml ./...
