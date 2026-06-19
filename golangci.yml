@@ -1,0 +1,13 @@
+run:
+  tests: false
+  modules-download-mode: mod
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - revive
+    - unused
+
+issues:
+  max-same-issues: 0
