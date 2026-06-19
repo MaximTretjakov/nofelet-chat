@@ -1,5 +1,12 @@
+issues:
+  exclude-use-default: false
+  # ВАЖНО: чтобы не сойти с ума, можно регулировать количество ошибок через max-issues-per-linter: 1, 2 или 50
+  max-issues-per-linter: 10
+  max-same-issues: 0
+
 run:
   timeout: 5m
+  tests: false
   modules-download-mode: readonly
 
 linters:
@@ -31,9 +38,3 @@ linters-settings:
     min-complexity: 20 # Порог 20 — "золотая середина" для читаемости
   gocyclo:
     min-complexity: 12
-
-issues:
-  exclude-use-default: false
-  # ВАЖНО: чтобы не сойти с ума, можно регулировать количество ошибок через max-issues-per-linter: 1, 2 или 50
-  max-issues-per-linter: 10
-  max-same-issues: 0
