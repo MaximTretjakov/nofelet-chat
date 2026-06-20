@@ -17,15 +17,14 @@ linters:
     - forbidigo
     - goconst
     - gocritic
-    - gofmt
     - goprintffuncname
     - gosec
-    - gosimple
+    - gocognit
     - makezero
     - misspell
     - revive
     - whitespace
-    - gci
+    - unused
 
 
 linters-settings:
