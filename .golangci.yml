@@ -22,57 +22,52 @@ linters:
     - whitespace
     - unused
 
-linters-settings:
-  godot:
-    exclude:
-      - "@.+"
+  settings:
+    godot:
+      exclude:
+        - "@.+"
 
-  revive:
-    rules:
-      - name: var-naming
-        arguments:
-          - ["ID", "URL"]
-      - name: early-return
-        severity: warning
-      - name: argument-limit
-        severity: warning
-        arguments: [4]
-        disabled: true
-      - name: context-as-argument
-        severity: warning
-        arguments:
-          - allowTypesBefore: "*testing.T"
-      - name: context-keys-type
-        severity: warning
-      - name: datarace
-        severity: warning
-      - name: defer
-        severity: warning
-        arguments:
-          - ["call-chain", "loop", "return"]
-      - name: error-naming
-        severity: warning
-      - name: error-strings
-        severity: warning
-      - name: errorf
-        severity: warning
-      - name: if-return
-        severity: warning
-      - name: line-length-limit
-        severity: warning
-        disabled: true
-        arguments: [120]
-      - name: nested-structs
-        severity: warning
-        disabled: true
-      - name: unreachable-code
-        severity: warning
-      - name: useless-break
-        severity: warning
-      - name: unused-parameter
-        severity: warning
-      - name: unexported-naming
-        severity: warning
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - ["ID", "URL"]
 
-  dupl:
-    threshold: 450
+        - name: early-return
+          severity: warning
+
+        - name: argument-limit
+          arguments: [4]
+          disabled: true
+
+        - name: context-as-argument
+          arguments:
+            - allowTypesBefore: "*testing.T"
+
+        - name: context-keys-type
+
+        - name: datarace
+
+        - name: defer
+          arguments:
+            - ["call-chain", "loop", "return"]
+
+        - name: error-naming
+        - name: error-strings
+        - name: errorf
+        - name: if-return
+
+        - name: line-length-limit
+          arguments: [120]
+          disabled: true
+
+        - name: nested-structs
+          disabled: true
+
+        - name: unreachable-code
+        - name: useless-break
+        - name: unused-parameter
+        - name: unexported-naming
+
+    dupl:
+      threshold: 450
