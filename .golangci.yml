@@ -22,16 +22,16 @@ linters:
     - whitespace
     - unused
 
-
 linters-settings:
   godot:
     exclude:
-      - '@.+'
+      - "@.+"
 
   revive:
     rules:
       - name: var-naming
-        arguments: [[], ["ID", "URL"], [{skipPackageNameChecks=true}]]
+        arguments:
+          - ["ID", "URL"]
       - name: early-return
         severity: warning
       - name: argument-limit
@@ -49,7 +49,7 @@ linters-settings:
       - name: defer
         severity: warning
         arguments:
-          - [ "call-chain", "loop", "return"]
+          - ["call-chain", "loop", "return"]
       - name: error-naming
         severity: warning
       - name: error-strings
@@ -61,7 +61,7 @@ linters-settings:
       - name: line-length-limit
         severity: warning
         disabled: true
-        arguments: [ 120 ]
+        arguments: [120]
       - name: nested-structs
         severity: warning
         disabled: true
@@ -73,5 +73,6 @@ linters-settings:
         severity: warning
       - name: unexported-naming
         severity: warning
+
   dupl:
     threshold: 450
