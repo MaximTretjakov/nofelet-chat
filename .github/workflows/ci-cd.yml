@@ -141,6 +141,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   APP_PATH: ${{ vars.APP_PATH }}
+  APP_INFRA: ${{ vars.INFRA }}
 
 jobs:
   Test:
@@ -244,9 +245,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            cd ${{ env.INFRA }}
-            echo ${{ env.INFRA }}
-            ls -la
+            cd ${{ env.APP_INFRA }}
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             docker compose pull nofelet-chat
             docker compose up -d nofelet-chat
