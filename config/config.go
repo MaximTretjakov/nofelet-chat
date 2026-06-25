@@ -9,14 +9,14 @@ import (
 )
 
 type Config struct {
-	WS    WSConfig `env:",prefix=WS_"` // Инфа сервера
-	Debug bool     `env:"DEBUG"`       // Дебаг режимы
+	Chat  Chat   `env:",prefix=CHAT_"`       // Инфа сервера
+	Debug bool   `env:"CHAT_DEBUG"`          // Дебаг режимы
+	Crt   string `env:"SERVER_CRT,required"` // Сертификат
+	Key   string `env:"SERVER_KEY,required"` // Сертификат
 }
 
-type WSConfig struct {
+type Chat struct {
 	Port              string        `env:"PORT,required"`                   // Порт
-	ServerCrt         string        `env:"SERVER_CRT,required"`             // Сертификат
-	ServerKey         string        `env:"SERVER_KEY,required"`             // Сертификат
 	ReadTimeout       time.Duration `env:"READ_TIMEOUT,default=30s"`        // Таймаут на чтение
 	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT,default=30s"`       // Таймаут на запись
 	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT,default=30s"` // Таймаут на чтение хедеров
