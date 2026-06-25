@@ -36,13 +36,13 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	httpServer := httpserver.New(deps.Chat.Routes,
-		httpserver.WithAddress(cfg.WS.Port),
-		httpserver.WithServerCRT(cfg.WS.ServerCrt),
-		httpserver.WithServerKey(cfg.WS.ServerKey),
-		httpserver.WithReadTimeout(cfg.WS.ReadTimeout),
-		httpserver.WithReadHeaderTimeout(cfg.WS.ReadHeaderTimeout),
-		httpserver.WithWriteTimeout(cfg.WS.WriteTimeout),
-		httpserver.WithShutdownTimeout(cfg.WS.ShutdownTimeout),
+		httpserver.WithAddress(cfg.Chat.Port),
+		httpserver.WithServerCRT(cfg.Crt),
+		httpserver.WithServerKey(cfg.Key),
+		httpserver.WithReadTimeout(cfg.Chat.ReadTimeout),
+		httpserver.WithReadHeaderTimeout(cfg.Chat.ReadHeaderTimeout),
+		httpserver.WithWriteTimeout(cfg.Chat.WriteTimeout),
+		httpserver.WithShutdownTimeout(cfg.Chat.ShutdownTimeout),
 	)
 
 	select {
