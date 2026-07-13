@@ -8,7 +8,6 @@ import (
 
 func Register(deps *dependency.Container) {
 	c := sc.New(makeUC(deps), deps.Logger, deps.Cfg)
-
 	r := deps.Chat.Routes
 	r.GET("/chat/:uuid", c.GetChat)
 }
