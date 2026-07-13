@@ -8,6 +8,7 @@ import (
 
 	"nofelet/config"
 	"nofelet/middleware"
+	"nofelet/middleware/metrics"
 )
 
 type Container struct {
@@ -37,6 +38,7 @@ func newRoutes() (*gin.Engine, error) {
 	router.HandleMethodNotAllowed = true
 	router.Use(
 		gin.Recovery(),
+		metrics.Metrics(),
 		middleware.DurationLoggerMiddleware(),
 	)
 	return router, nil

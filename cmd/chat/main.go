@@ -1,15 +1,21 @@
 package main
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"go.opentelemetry.io/otel"
+	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+
 	"nofelet/config"
 	"nofelet/internal/app/chat"
 	"nofelet/internal/dependency"
+	"nofelet/middleware/metrics"
 
 	"nofelet/pkg/httpserver"
 )
@@ -22,6 +28,17 @@ func main() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
+
+	// Создаем современный экспортер v0.66.0
+	exporter, err := otelprom.New()
+	if err != nil {
+		log.Fatalf("failed to create exporter: %v", err)
+	}
+
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
+	otel.SetMeterProvider(provider)
+	metrics.Init()
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	deps, depErr := dependency.New(&cfg, logger)
 	if depErr != nil {
