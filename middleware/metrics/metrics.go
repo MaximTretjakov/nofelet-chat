@@ -6,7 +6,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-const serviceLabel = "nofelet-web"
+const serviceLabel = "nofelet-chat"
 
 var (
 	requestsTotal   metric.Int64Counter
