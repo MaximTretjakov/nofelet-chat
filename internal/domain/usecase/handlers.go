@@ -12,6 +12,7 @@ import (
 	"nofelet/internal/domain/chat/controller/view"
 	"nofelet/internal/domain/event"
 	"nofelet/internal/hub"
+	"nofelet/middleware/metrics"
 )
 
 const (
@@ -38,7 +39,7 @@ func handler(
 	for {
 		select {
 		case msg := <-dataCh:
-			if err := dispatcher(msg, cm, chat, log); err != nil {
+			if err := dispatcher(ctx, msg, cm, chat, log); err != nil {
 				return
 			}
 		case <-ticker.C:
@@ -64,7 +65,13 @@ func handler(
 }
 
 // dispatcher - Обрабатывает события от клиента
-func dispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub, log *slog.Logger) error {
+func dispatcher(
+	ctx context.Context,
+	e view.Event,
+	cm *decorator.ConnectionManager,
+	chat *hub.Hub,
+	log *slog.Logger,
+) error {
 	switch e.Type {
 	case event.JoinRoomEvent:
 		var j view.JoinMessagePayload
@@ -83,7 +90,9 @@ func dispatcher(e view.Event, cm *decorator.ConnectionManager, chat *hub.Hub, lo
 
 		if tErr := chat.SendMessage(m); tErr != nil {
 			log.Error("handler", "err", tErr)
+			metrics.MessagesTotal.Add(ctx, -1)
 		}
+		metrics.MessagesTotal.Add(ctx, 1)
 	}
 
 	return nil

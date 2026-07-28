@@ -8,6 +8,7 @@ import (
 
 	"nofelet/decorator"
 	"nofelet/internal/hub"
+	"nofelet/middleware/metrics"
 )
 
 var errChatRoomNotFound = errors.New("chat room not found")
@@ -25,10 +26,13 @@ func (c *Controller) GetChat(ctx *gin.Context) {
 	if sErr != nil {
 		c.log.Error("socket creation", "err", sErr)
 	}
+	metrics.WebSocketConnectionsActive.Add(ctx, 1)
+	defer metrics.WebSocketConnectionsActive.Add(ctx, -1)
 
 	// Создаем комнату
 	chat := hub.NewChatRoom()
 	chat.Init(uuid)
+	metrics.RoomsActive.Add(ctx, 1)
 
 	// Создаем декоратор коннекшена
 	dConn := decorator.New(uConn, c.log, c.cfg)

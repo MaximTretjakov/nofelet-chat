@@ -11,11 +11,13 @@ const serviceLabel = "nofelet-chat"
 var (
 	requestsTotal   metric.Int64Counter
 	responseTotal   metric.Int64Counter
-	errorsTotal     metric.Int64Counter
-	panicsTotal     metric.Int64Counter
-	responseSize    metric.Int64Histogram
 	requestDuration metric.Float64Histogram
 	activeRequests  metric.Int64UpDownCounter
+
+	MessagesTotal              metric.Int64Counter
+	UsersOnline                metric.Int64UpDownCounter
+	RoomsActive                metric.Int64UpDownCounter
+	WebSocketConnectionsActive metric.Int64UpDownCounter
 )
 
 func Init() {
@@ -44,26 +46,6 @@ func Init() {
 		logger.Warn("сбой инициализации метрики responseTotal", err)
 	}
 
-	// Счетчик ошибок
-	errorsTotal, err = meter.Int64Counter(
-		"http.server.errors.total",
-		metric.WithDescription("Total number of failed HTTP requests."),
-		metric.WithUnit("{error}"),
-	)
-	if err != nil {
-		logger.Warn("сбой инициализации метрики errorsTotal", err)
-	}
-
-	// Счетчик паник
-	panicsTotal, err = meter.Int64Counter(
-		"http.server.panics.total",
-		metric.WithDescription("Total number of recovered panics."),
-		metric.WithUnit("{panic}"),
-	)
-	if err != nil {
-		logger.Warn("сбой инициализации метрики panicsTotal", err)
-	}
-
 	// Гистограмма времени выполнения запроса
 	requestDuration, err = meter.Float64Histogram(
 		"http.server.request.duration",
@@ -72,16 +54,6 @@ func Init() {
 	)
 	if err != nil {
 		logger.Warn("сбой инициализации метрики requestDuration", err)
-	}
-
-	// Размер ответа
-	responseSize, err = meter.Int64Histogram(
-		"http.server.response.size",
-		metric.WithDescription("HTTP response size."),
-		metric.WithUnit("By"),
-	)
-	if err != nil {
-		logger.Warn("сбой инициализации метрики responseSize", err)
 	}
 
 	// Активные запросы
@@ -93,4 +65,32 @@ func Init() {
 	if err != nil {
 		logger.Warn("сбой инициализации метрики activeRequests", err)
 	}
+
+	// Количество активных пользователей
+	UsersOnline, err = meter.Int64UpDownCounter(
+		"chat.users.online",
+		metric.WithDescription("Current number of online users."),
+		metric.WithUnit("{user}"),
+	)
+
+	// Количество активных соединений
+	WebSocketConnectionsActive, err = meter.Int64UpDownCounter(
+		"chat.websocket.connections.active",
+		metric.WithDescription("Current number of active WebSocket connections."),
+		metric.WithUnit("{connection}"),
+	)
+
+	// Количество активных комнат
+	RoomsActive, err = meter.Int64UpDownCounter(
+		"chat.rooms.active",
+		metric.WithDescription("Current number of active chat rooms."),
+		metric.WithUnit("{room}"),
+	)
+
+	// Количество сообщений
+	MessagesTotal, err = meter.Int64Counter(
+		"chat.messages.total",
+		metric.WithDescription("Total number of messages processed."),
+		metric.WithUnit("{message}"),
+	)
 }
